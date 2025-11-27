@@ -1,0 +1,14 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "ppakistani0300-tech.github",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "ppakistani0300-tech.github",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "categories": [
+    "business"
+  ]
+}
