@@ -1,0 +1,1931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAPPER Gents - Business Management</title>
+    <meta name="theme-color" content="#1e40af">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        @media print {
+            body { background: #fff !important; }
+            body * { visibility: hidden !important; }
+            #invoiceModal, #invoiceModal * { visibility: visible !important; }
+            #invoiceModal { 
+                position: absolute !important;
+                inset: 0 !important;
+                background: #fff !important;
+                padding: 0 !important;
+            }
+            #invoiceModal > div {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                max-width: none !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-6">
+                <div class="flex flex-col items-center gap-3">
+                    <h1 class="text-4xl font-bold text-center">DAPPER Gents</h1>
+                    <p class="text-center text-blue-100">Business Management System</p>
+                    <div class="flex flex-wrap items-center justify-center gap-2">
+                        <button id="installBtn" type="button" class="hidden bg-white/15 hover:bg-white/20 border border-white/25 text-white px-4 py-2 rounded-lg font-semibold text-sm">
+                            Install App
+                        </button>
+                        <a href="manifest.webmanifest" class="bg-white/10 hover:bg-white/15 border border-white/20 text-white px-4 py-2 rounded-lg font-semibold text-sm">
+                            PWA Manifest
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="bg-white shadow-md sticky top-0 z-50">
+            <div class="container mx-auto px-4">
+                <div class="flex overflow-x-auto">
+                    <button data-tab="dashboard" onclick="showTab('dashboard', this)" class="tab-btn px-6 py-4 font-semibold border-b-2 border-transparent hover:text-blue-600">Dashboard</button>
+                    <button data-tab="purchase" onclick="showTab('purchase', this)" class="tab-btn px-6 py-4 font-semibold border-b-2 border-transparent hover:text-blue-600">Purchase</button>
+                    <button data-tab="sale" onclick="showTab('sale', this)" class="tab-btn px-6 py-4 font-semibold border-b-2 border-blue-600 text-blue-600">Sale</button>
+                    <button data-tab="expense" onclick="showTab('expense', this)" class="tab-btn px-6 py-4 font-semibold border-b-2 border-transparent hover:text-blue-600">Expense</button>
+                    <button data-tab="inventory" onclick="showTab('inventory', this)" class="tab-btn px-6 py-4 font-semibold border-b-2 border-transparent hover:text-blue-600">Inventory</button>
+                    <button data-tab="reports" onclick="showTab('reports', this)" class="tab-btn px-6 py-4 font-semibold border-b-2 border-transparent hover:text-blue-600">Reports</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-8">
+            
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+                        <h3 class="text-gray-500 text-sm font-semibold">Today's Purchase</h3>
+                        <p class="text-3xl font-bold text-blue-600" id="totalPurchase">Rs. 0</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+                        <h3 class="text-gray-500 text-sm font-semibold">Today's Sales</h3>
+                        <p class="text-3xl font-bold text-green-600" id="totalSales">Rs. 0</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-amber-500">
+                        <h3 class="text-gray-500 text-sm font-semibold">Today's Gross Profit</h3>
+                        <p class="text-3xl font-bold text-amber-600" id="todayGrossProfit">Rs. 0</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
+                        <h3 class="text-gray-500 text-sm font-semibold">Today's Expense</h3>
+                        <p class="text-3xl font-bold text-red-600" id="totalExpense">Rs. 0</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
+                        <h3 class="text-gray-500 text-sm font-semibold">Today's Profit</h3>
+                        <p class="text-3xl font-bold text-orange-600" id="todayProfit">Rs. 0</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+                        <h3 class="text-gray-500 text-sm font-semibold">Net Profit</h3>
+                        <p class="text-3xl font-bold text-purple-600" id="netProfit">Rs. 0</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold mb-4">Recent Transactions</h2>
+                    <div id="recentTransactions" class="overflow-x-auto"></div>
+                </div>
+            </div>
+
+            <!-- Purchase Tab -->
+            <div id="purchase" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-bold mb-4">Add Purchase</h2>
+                    <form id="purchaseForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="hidden" id="purchaseEditId">
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Date</label>
+                            <input type="date" id="purchaseDate" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Item Name</label>
+                            <input type="text" id="purchaseItem" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter item name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Quantity</label>
+                            <input type="number" id="purchaseQuantity" required min="1" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter quantity">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Price per Unit (Rs.)</label>
+                            <input type="number" id="purchasePrice" required min="0" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter price">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Supplier Name</label>
+                            <input type="text" id="purchaseSupplier" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter supplier name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Total Amount (Rs.)</label>
+                            <input type="number" id="purchaseTotal" readonly class="w-full px-4 py-2 border rounded-lg bg-gray-100" placeholder="Auto calculated">
+                        </div>
+                        <div class="md:col-span-2">
+                            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-semibold">Add Purchase</button>
+                            <button type="button" onclick="cancelEdit('purchase')" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 font-semibold ml-2 hidden" id="purchaseCancelBtn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold mb-4">Purchase History</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full" id="purchaseTable">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Date</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Item</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Quantity</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Price/Unit</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Supplier</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Total</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="purchaseTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sale Tab -->
+            <div id="sale" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-bold mb-4">Add Sale</h2>
+                    <form id="saleForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="hidden" id="saleEditId">
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Date</label>
+                            <input type="date" id="saleDate" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Item Name</label>
+                            <input type="text" id="saleItem" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Enter item name" list="inventoryItems">
+                            <datalist id="inventoryItems"></datalist>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Quantity</label>
+                            <input type="number" id="saleQuantity" required min="1" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Enter quantity">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Price per Unit (Rs.)</label>
+                            <input type="number" id="salePrice" required min="0" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Enter price">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Discount (Rs.)</label>
+                            <input type="number" id="saleDiscount" min="0" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Enter discount (optional)">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Customer Name</label>
+                            <input type="text" id="saleCustomer" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Enter customer name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Total Amount (Rs.)</label>
+                            <input type="number" id="saleTotal" readonly class="w-full px-4 py-2 border rounded-lg bg-gray-100" placeholder="Auto calculated">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Expected Profit (Rs.)</label>
+                            <input type="number" id="saleExpectedProfit" readonly class="w-full px-4 py-2 border rounded-lg bg-green-50 font-semibold text-green-600" placeholder="Auto calculated">
+                        </div>
+                        <div class="md:col-span-2 flex flex-wrap gap-2">
+                            <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-semibold">Add Sale</button>
+                            <button type="button" onclick="addSaleToCart()" class="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 font-semibold">Add to Cart</button>
+                            <button type="button" onclick="cancelEdit('sale')" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 font-semibold hidden" id="saleCancelBtn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Cart / Multi-item Invoice Builder -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <h2 class="text-2xl font-bold">Cart (Multiple Items Invoice)</h2>
+                        <div class="text-sm text-gray-600">Items: <span id="cartCount" class="font-semibold">0</span></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Bill Date</label>
+                            <input type="date" id="cartBillDate" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Customer Name</label>
+                            <input type="text" id="cartBillCustomer" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="(optional)">
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <button type="button" onclick="syncCartMetaFromSaleForm()" class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 font-semibold">Use Sale Form Details</button>
+                            <button type="button" onclick="clearCart()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 font-semibold">Clear Cart</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Item</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Qty</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Price/Unit</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Discount</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Total</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartTableBody">
+                                <tr>
+                                    <td colspan="6" class="px-4 py-6 text-center text-gray-500">Cart is empty — use “Add to Cart” from the Sale form.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="border rounded-lg p-4">
+                            <div class="text-xs uppercase tracking-wider text-gray-500 font-semibold">Cart Totals</div>
+                            <div class="mt-2 text-sm flex items-center justify-between"><span>Subtotal</span><span class="font-semibold" id="cartSubtotal">Rs. 0.00</span></div>
+                            <div class="mt-1 text-sm flex items-center justify-between"><span>Discount</span><span class="font-semibold text-red-600" id="cartDiscount">- Rs. 0.00</span></div>
+                            <div class="mt-2 border-t pt-2 text-sm flex items-center justify-between"><span class="font-semibold">Total</span><span class="font-bold" id="cartTotal">Rs. 0.00</span></div>
+                        </div>
+                        <div class="md:col-span-2 flex flex-wrap items-end justify-between gap-3">
+                            <div class="text-sm text-gray-500">Tip: Add multiple items to the cart, then create a single invoice for all items.</div>
+                            <button id="checkoutCartBtn" type="button" onclick="checkoutCartAndInvoice()" disabled class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 font-semibold disabled:opacity-60 disabled:cursor-not-allowed">Checkout & Generate Invoice</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <h2 class="text-2xl font-bold">Sale History</h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="text-sm text-gray-600">Selected: <span id="selectedSalesCount" class="font-semibold">0</span></div>
+                            <button id="invoiceSelectedBtn" onclick="openSelectedInvoice()" disabled class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-semibold disabled:opacity-60 disabled:cursor-not-allowed">Invoice Selected</button>
+                            <button type="button" onclick="clearSaleSelection()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 font-semibold">Clear</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full" id="saleTable">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold w-10">
+                                        <input id="saleSelectAll" type="checkbox" onchange="toggleSelectAllSales(this.checked)" class="h-4 w-4">
+                                    </th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Date</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Item</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Quantity</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Price/Unit</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Customer</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Total</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Profit</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="saleTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expense Tab -->
+            <div id="expense" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-bold mb-4">Add Expense</h2>
+                    <form id="expenseForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="hidden" id="expenseEditId">
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Date</label>
+                            <input type="date" id="expenseDate" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Category</label>
+                            <select id="expenseCategory" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
+                                <option value="">Select Category</option>
+                                <option value="Rent">Rent</option>
+                                <option value="Utilities">Utilities</option>
+                                <option value="Salary">Salary</option>
+                                <option value="Transportation">Transportation</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Food">Food</option>
+                                <option value="Tea">Tea</option>
+                                <option value="Misc">Misc</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Description</label>
+                            <input type="text" id="expenseDescription" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Enter description">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Amount (Rs.)</label>
+                            <input type="number" id="expenseAmount" required min="0" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Enter amount">
+                        </div>
+                        <div class="md:col-span-2">
+                            <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 font-semibold">Add Expense</button>
+                            <button type="button" onclick="cancelEdit('expense')" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 font-semibold ml-2 hidden" id="expenseCancelBtn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold mb-4">Expense History</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full" id="expenseTable">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Date</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Category</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Description</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Amount</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Tab -->
+            <div id="inventory" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold">Stock Inventory</h2>
+                        <button onclick="refreshInventory()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-semibold">Refresh</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full" id="inventoryTable">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Item Name</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Total Purchased</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Total Sold</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Current Stock</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div id="reports" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-bold mb-4">Generate Reports</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">Report Type</label>
+                            <select id="reportType" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="daily">Daily Report</option>
+                                <option value="monthly">Monthly Report</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">From Date</label>
+                            <input type="date" id="reportFromDate" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2">To Date</label>
+                            <input type="date" id="reportToDate" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="generateReport()" class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-semibold">Generate Report</button>
+                        <button onclick="exportToExcel()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-semibold">Export to Excel</button>
+                        <button onclick="exportToPDF()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 font-semibold">Export to PDF</button>
+                    </div>
+                </div>
+
+                <div id="reportContent" class="bg-white rounded-lg shadow-md p-6">
+                    <div class="text-center text-gray-500 py-8">
+                        <p class="text-lg">Select report type and click "Generate Report" to view data</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Invoice Modal -->
+        <div id="invoiceModal" onclick="if(event.target===this) closeInvoiceModal()" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+            <div class="bg-white w-full max-w-3xl rounded-lg shadow-xl overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 border-b no-print">
+                    <h3 class="text-xl font-bold">Invoice Preview</h3>
+                    <button type="button" onclick="closeInvoiceModal()" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+                </div>
+                <div class="p-6">
+                    <div id="invoicePreview" class="bg-white"></div>
+                </div>
+                <div class="flex flex-wrap gap-3 px-6 py-4 border-t bg-gray-50 no-print">
+                    <button type="button" onclick="downloadInvoicePDF()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 font-semibold">Download PDF</button>
+                    <button type="button" onclick="printInvoice()" class="bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-900 font-semibold">Print</button>
+                    <button type="button" onclick="closeInvoiceModal()" class="bg-gray-500 text-white px-5 py-2 rounded-lg hover:bg-gray-600 font-semibold">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white text-center py-4 mt-8">
+            <p>&copy; 2024 DAPPER Gents. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize data structure
+        let data = {
+            purchases: [],
+            sales: [],
+            expenses: []
+        };
+
+        // Load data from localStorage
+        function loadData() {
+            const savedData = localStorage.getItem('dapperGentsData');
+            if (savedData) {
+                data = JSON.parse(savedData);
+            }
+            setTodayDate();
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('dapperGentsData', JSON.stringify(data));
+            updateDashboard();
+            updateInventory();
+            updateInventoryDatalist();
+        }
+
+        // Set today's date as default
+        function setTodayDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('purchaseDate').value = today;
+            document.getElementById('saleDate').value = today;
+            document.getElementById('expenseDate').value = today;
+            document.getElementById('reportFromDate').value = today;
+            document.getElementById('reportToDate').value = today;
+
+            // Cart bill date (if section exists)
+            const cartBillDateEl = document.getElementById('cartBillDate');
+            if (cartBillDateEl && !cartBillDateEl.value) cartBillDateEl.value = today;
+        }
+
+        // Tab Navigation
+        function showTab(tabName, btnEl) {
+            const tabs = document.querySelectorAll('.tab-content');
+            const btns = document.querySelectorAll('.tab-btn');
+
+            tabs.forEach(tab => tab.classList.add('hidden'));
+            btns.forEach(btn => {
+                btn.classList.remove('border-blue-600', 'text-blue-600');
+                btn.classList.add('border-transparent');
+            });
+
+            const tab = document.getElementById(tabName);
+            if (tab) tab.classList.remove('hidden');
+
+            // Prefer explicit button reference; fallback to matching data-tab
+            const targetBtn = btnEl || document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+            if (targetBtn) targetBtn.classList.add('border-blue-600', 'text-blue-600');
+
+            if (tabName === 'inventory') {
+                updateInventory();
+            }
+        }
+
+        // Auto calculate total for purchase
+        document.getElementById('purchaseQuantity').addEventListener('input', calculatePurchaseTotal);
+        document.getElementById('purchasePrice').addEventListener('input', calculatePurchaseTotal);
+
+        function calculatePurchaseTotal() {
+            const qty = parseFloat(document.getElementById('purchaseQuantity').value) || 0;
+            const price = parseFloat(document.getElementById('purchasePrice').value) || 0;
+            document.getElementById('purchaseTotal').value = (qty * price).toFixed(2);
+        }
+
+        // Auto calculate total for sale
+        document.getElementById('saleItem').addEventListener('input', calculateSaleTotal);
+        document.getElementById('saleQuantity').addEventListener('input', calculateSaleTotal);
+        document.getElementById('salePrice').addEventListener('input', calculateSaleTotal);
+        document.getElementById('saleDiscount').addEventListener('input', calculateSaleTotal);
+
+        // (Multi-item billing feature removed) — no bill line auto-calculation listeners
+
+        function calculateSaleTotal() {
+            const item = document.getElementById('saleItem').value;
+            const qty = parseFloat(document.getElementById('saleQuantity').value) || 0;
+            const price = parseFloat(document.getElementById('salePrice').value) || 0;
+            const discountRaw = parseFloat(document.getElementById('saleDiscount').value);
+            const discount = Math.max(0, isNaN(discountRaw) ? 0 : discountRaw);
+
+            const subtotal = qty * price;
+            const total = Math.max(0, subtotal - discount);
+            document.getElementById('saleTotal').value = total.toFixed(2);
+
+            // Calculate expected profit (after discount)
+            if (item && qty > 0) {
+                const avgPurchasePrice = calculateItemProfit(item, qty);
+                const costTotal = avgPurchasePrice * qty;
+                const expectedProfit = total - costTotal;
+                const profitField = document.getElementById('saleExpectedProfit');
+                profitField.value = expectedProfit.toFixed(2);
+
+                // Change color based on profit/loss
+                if (expectedProfit >= 0) {
+                    profitField.className = 'w-full px-4 py-2 border rounded-lg bg-green-50 font-semibold text-green-600';
+                } else {
+                    profitField.className = 'w-full px-4 py-2 border rounded-lg bg-red-50 font-semibold text-red-600';
+                }
+            } else {
+                document.getElementById('saleExpectedProfit').value = '';
+                document.getElementById('saleExpectedProfit').className = 'w-full px-4 py-2 border rounded-lg bg-green-50 font-semibold text-green-600';
+            }
+        }
+
+        // Purchase Form Submit
+        document.getElementById('purchaseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const editId = document.getElementById('purchaseEditId').value;
+            const purchase = {
+                id: editId || Date.now().toString(),
+                date: document.getElementById('purchaseDate').value,
+                item: document.getElementById('purchaseItem').value,
+                quantity: parseFloat(document.getElementById('purchaseQuantity').value),
+                price: parseFloat(document.getElementById('purchasePrice').value),
+                supplier: document.getElementById('purchaseSupplier').value,
+                total: parseFloat(document.getElementById('purchaseTotal').value)
+            };
+
+            if (editId) {
+                const index = data.purchases.findIndex(p => p.id === editId);
+                data.purchases[index] = purchase;
+            } else {
+                data.purchases.push(purchase);
+            }
+
+            saveData();
+            displayPurchases();
+            this.reset();
+            setTodayDate();
+            document.getElementById('purchaseEditId').value = '';
+            document.getElementById('purchaseCancelBtn').classList.add('hidden');
+        });
+
+        // Display Purchases
+        function displayPurchases() {
+            const tbody = document.getElementById('purchaseTableBody');
+            tbody.innerHTML = '';
+            
+            data.purchases.forEach(purchase => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td class="px-4 py-3 border-b">${purchase.date}</td>
+                    <td class="px-4 py-3 border-b">${purchase.item}</td>
+                    <td class="px-4 py-3 border-b">${purchase.quantity}</td>
+                    <td class="px-4 py-3 border-b">Rs. ${purchase.price.toFixed(2)}</td>
+                    <td class="px-4 py-3 border-b">${purchase.supplier}</td>
+                    <td class="px-4 py-3 border-b font-semibold">Rs. ${purchase.total.toFixed(2)}</td>
+                    <td class="px-4 py-3 border-b">
+                        <button onclick="editPurchase('${purchase.id}')" class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-sm mr-1">Edit</button>
+                        <button onclick="deletePurchase('${purchase.id}')" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm">Delete</button>
+                    </td>
+                `;
+            });
+        }
+
+        // Edit Purchase
+        function editPurchase(id) {
+            const purchase = data.purchases.find(p => p.id === id);
+            if (purchase) {
+                document.getElementById('purchaseEditId').value = purchase.id;
+                document.getElementById('purchaseDate').value = purchase.date;
+                document.getElementById('purchaseItem').value = purchase.item;
+                document.getElementById('purchaseQuantity').value = purchase.quantity;
+                document.getElementById('purchasePrice').value = purchase.price;
+                document.getElementById('purchaseSupplier').value = purchase.supplier;
+                document.getElementById('purchaseTotal').value = purchase.total;
+                document.getElementById('purchaseCancelBtn').classList.remove('hidden');
+                showTab('purchase');
+                window.scrollTo(0, 0);
+            }
+        }
+
+        // Delete Purchase
+        function deletePurchase(id) {
+            if (confirm('Are you sure you want to delete this purchase?')) {
+                data.purchases = data.purchases.filter(p => p.id !== id);
+                saveData();
+                displayPurchases();
+            }
+        }
+
+        // Sale Form Submit
+        document.getElementById('saleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const editId = document.getElementById('saleEditId').value;
+            const sale = {
+                id: editId || Date.now().toString(),
+                date: document.getElementById('saleDate').value,
+                item: document.getElementById('saleItem').value,
+                quantity: parseFloat(document.getElementById('saleQuantity').value),
+                price: parseFloat(document.getElementById('salePrice').value),
+                discount: Math.max(0, parseFloat(document.getElementById('saleDiscount').value) || 0),
+                customer: document.getElementById('saleCustomer').value,
+                total: parseFloat(document.getElementById('saleTotal').value)
+            };
+
+            if (editId) {
+                const index = data.sales.findIndex(s => s.id === editId);
+                data.sales[index] = sale;
+            } else {
+                data.sales.push(sale);
+            }
+
+            saveData();
+            displaySales();
+            this.reset();
+            setTodayDate();
+            document.getElementById('saleEditId').value = '';
+            document.getElementById('saleCancelBtn').classList.add('hidden');
+        });
+
+        // Calculate Item Profit
+        function calculateItemProfit(item, quantity) {
+            // Get average purchase price for this item
+            const itemPurchases = data.purchases.filter(p => p.item === item);
+            if (itemPurchases.length === 0) return 0;
+            
+            const totalPurchaseCost = itemPurchases.reduce((sum, p) => sum + p.total, 0);
+            const totalPurchaseQty = itemPurchases.reduce((sum, p) => sum + p.quantity, 0);
+            const avgPurchasePrice = totalPurchaseCost / totalPurchaseQty;
+            
+            return avgPurchasePrice;
+        }
+
+        // ---------------------------
+        // Cart (Multi-item Bill -> Single Invoice)
+        // ---------------------------
+        let saleCart = []; // [{id,item,quantity,price,discount,subtotal,total}]
+
+        function getSaleFormSnapshot() {
+            const item = (document.getElementById('saleItem').value || '').trim();
+            const qty = Number(document.getElementById('saleQuantity').value || 0);
+            const price = Number(document.getElementById('salePrice').value || 0);
+            const discount = Math.max(0, Number(document.getElementById('saleDiscount').value || 0));
+            const date = document.getElementById('saleDate').value;
+            const customer = (document.getElementById('saleCustomer').value || '').trim();
+
+            const subtotal = qty * price;
+            const total = Math.max(0, subtotal - discount);
+
+            return { item, qty, price, discount, date, customer, subtotal, total };
+        }
+
+        function syncCartMetaFromSaleForm() {
+            const snap = getSaleFormSnapshot();
+            const billDateEl = document.getElementById('cartBillDate');
+            const billCustomerEl = document.getElementById('cartBillCustomer');
+
+            if (billDateEl && snap.date) billDateEl.value = snap.date;
+            if (billCustomerEl && snap.customer) billCustomerEl.value = snap.customer;
+        }
+
+        function addSaleToCart() {
+            const editId = (document.getElementById('saleEditId').value || '').trim();
+            if (editId) {
+                alert('You are editing an existing sale. Please click Cancel to exit edit mode before adding items to cart.');
+                return;
+            }
+
+            const snap = getSaleFormSnapshot();
+
+            if (!snap.date) {
+                alert('Please select a date first.');
+                return;
+            }
+            if (!snap.item) {
+                alert('Please enter an item name.');
+                return;
+            }
+            if (!(snap.qty > 0)) {
+                alert('Quantity must be at least 1.');
+                return;
+            }
+            if (snap.price < 0 || isNaN(snap.price)) {
+                alert('Please enter a valid price.');
+                return;
+            }
+            if (snap.discount < 0 || isNaN(snap.discount)) {
+                alert('Please enter a valid discount.');
+                return;
+            }
+            if (snap.discount > snap.subtotal) {
+                alert('Discount cannot be greater than subtotal.');
+                return;
+            }
+
+            // Auto-fill cart meta (if empty)
+            const cartBillDateEl = document.getElementById('cartBillDate');
+            const cartBillCustomerEl = document.getElementById('cartBillCustomer');
+            if (cartBillDateEl && !cartBillDateEl.value) cartBillDateEl.value = snap.date;
+            if (cartBillCustomerEl && !cartBillCustomerEl.value && snap.customer) cartBillCustomerEl.value = snap.customer;
+
+            const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            saleCart.push({
+                id,
+                item: snap.item,
+                quantity: snap.qty,
+                price: snap.price,
+                discount: snap.discount,
+                subtotal: snap.subtotal,
+                total: snap.total
+            });
+
+            updateCartUI();
+
+            // Clear only item fields for faster next entry (keep date/customer)
+            document.getElementById('saleItem').value = '';
+            document.getElementById('saleQuantity').value = '';
+            document.getElementById('salePrice').value = '';
+            document.getElementById('saleDiscount').value = '';
+            document.getElementById('saleTotal').value = '';
+            document.getElementById('saleExpectedProfit').value = '';
+            document.getElementById('saleExpectedProfit').className = 'w-full px-4 py-2 border rounded-lg bg-green-50 font-semibold text-green-600';
+            document.getElementById('saleItem').focus();
+        }
+
+        function clearCart() {
+            if (saleCart.length === 0) return;
+            if (!confirm('Clear all items from cart?')) return;
+            saleCart = [];
+            updateCartUI();
+        }
+
+        function removeCartItem(id) {
+            saleCart = saleCart.filter(x => x.id !== id);
+            updateCartUI();
+        }
+
+        function editCartItem(id) {
+            const idx = saleCart.findIndex(x => x.id === id);
+            if (idx === -1) return;
+            const it = saleCart[idx];
+
+            // Load into sale form for editing, then remove from cart
+            document.getElementById('saleItem').value = it.item;
+            document.getElementById('saleQuantity').value = it.quantity;
+            document.getElementById('salePrice').value = it.price;
+            document.getElementById('saleDiscount').value = it.discount;
+            calculateSaleTotal();
+
+            saleCart.splice(idx, 1);
+            updateCartUI();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateCartUI() {
+            const tbody = document.getElementById('cartTableBody');
+            const cnt = document.getElementById('cartCount');
+            const subtotalEl = document.getElementById('cartSubtotal');
+            const discountEl = document.getElementById('cartDiscount');
+            const totalEl = document.getElementById('cartTotal');
+            const checkoutBtn = document.getElementById('checkoutCartBtn');
+
+            if (!tbody || !cnt || !subtotalEl || !discountEl || !totalEl || !checkoutBtn) return;
+
+            cnt.textContent = String(saleCart.length);
+            checkoutBtn.disabled = saleCart.length === 0;
+
+            if (saleCart.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-6 text-center text-gray-500">Cart is empty — use “Add to Cart” from the Sale form.</td>
+                    </tr>
+                `;
+                subtotalEl.textContent = formatCurrency(0);
+                discountEl.textContent = `- ${formatCurrency(0)}`;
+                totalEl.textContent = formatCurrency(0);
+                return;
+            }
+
+            let subtotalSum = 0;
+            let discountSum = 0;
+            let totalSum = 0;
+
+            tbody.innerHTML = '';
+            saleCart.forEach(it => {
+                subtotalSum += Number(it.subtotal || 0);
+                discountSum += Number(it.discount || 0);
+                totalSum += Number(it.total || 0);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-3 border-b font-semibold">${escapeHtml(it.item)}</td>
+                    <td class="px-4 py-3 border-b">${it.quantity}</td>
+                    <td class="px-4 py-3 border-b">${formatCurrency(it.price)}</td>
+                    <td class="px-4 py-3 border-b">${it.discount > 0 ? ('- ' + formatCurrency(it.discount)) : '-'}</td>
+                    <td class="px-4 py-3 border-b font-semibold">${formatCurrency(it.total)}</td>
+                    <td class="px-4 py-3 border-b">
+                        <div class="flex flex-wrap gap-1">
+                            <button type="button" onclick="editCartItem('${it.id}')" class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-sm">Edit</button>
+                            <button type="button" onclick="removeCartItem('${it.id}')" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm">Remove</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            subtotalEl.textContent = formatCurrency(subtotalSum);
+            discountEl.textContent = `- ${formatCurrency(discountSum)}`;
+            totalEl.textContent = formatCurrency(totalSum);
+        }
+
+        function checkoutCartAndInvoice() {
+            if (saleCart.length === 0) return;
+
+            const date = (document.getElementById('cartBillDate').value || '').trim() || (document.getElementById('saleDate').value || '').trim() || new Date().toISOString().split('T')[0];
+            const customer = (document.getElementById('cartBillCustomer').value || '').trim();
+
+            // Create real sales entries so inventory/profit/reports stay correct
+            const newIds = [];
+            let seq = 0;
+            saleCart.forEach(it => {
+                seq += 1;
+                const id = `${Date.now()}-${seq}`;
+                newIds.push(id);
+
+                const qty = Number(it.quantity || 0);
+                const price = Number(it.price || 0);
+                const discount = Math.max(0, Number(it.discount || 0));
+                const subtotal = qty * price;
+                const total = Math.max(0, subtotal - discount);
+
+                data.sales.push({
+                    id,
+                    date,
+                    item: it.item,
+                    quantity: qty,
+                    price,
+                    discount,
+                    customer,
+                    total
+                });
+            });
+
+            // Persist + refresh UI
+            saveData();
+            displaySales();
+
+            // Clear cart
+            saleCart = [];
+            updateCartUI();
+
+            // Open combined invoice
+            openInvoiceForSales(newIds);
+        }
+
+        // ---------------------------
+        // Sale selection (Multi-item Invoice)
+        // ---------------------------
+        let selectedSaleIds = new Set();
+
+        function updateSaleSelectionUI() {
+            const countEl = document.getElementById('selectedSalesCount');
+            const btn = document.getElementById('invoiceSelectedBtn');
+            const selectAll = document.getElementById('saleSelectAll');
+            if (!countEl || !btn || !selectAll) return;
+
+            countEl.textContent = String(selectedSaleIds.size);
+            btn.disabled = selectedSaleIds.size === 0;
+
+            const allIds = data.sales.map(s => s.id);
+            const allSelected = allIds.length > 0 && allIds.every(id => selectedSaleIds.has(id));
+            selectAll.checked = allSelected;
+            selectAll.indeterminate = selectedSaleIds.size > 0 && !allSelected;
+        }
+
+        function toggleSaleSelection(id, checked) {
+            if (checked) selectedSaleIds.add(id);
+            else selectedSaleIds.delete(id);
+            updateSaleSelectionUI();
+        }
+
+        function toggleSelectAllSales(checked) {
+            if (checked) {
+                data.sales.forEach(s => selectedSaleIds.add(s.id));
+            } else {
+                selectedSaleIds.clear();
+            }
+            displaySales();
+        }
+
+        function clearSaleSelection() {
+            selectedSaleIds.clear();
+            displaySales();
+        }
+
+        function openSelectedInvoice() {
+            if (selectedSaleIds.size === 0) {
+                alert('Please select at least one sale to generate an invoice.');
+                return;
+            }
+            openInvoiceForSales([...selectedSaleIds]);
+        }
+
+        // Display Sales
+        function displaySales() {
+            const tbody = document.getElementById('saleTableBody');
+            tbody.innerHTML = '';
+
+            // Remove any selections that no longer exist
+            selectedSaleIds.forEach(id => {
+                if (!data.sales.some(s => s.id === id)) selectedSaleIds.delete(id);
+            });
+
+            data.sales.forEach(sale => {
+                const qty = Number(sale.quantity || 0);
+                const unitPrice = Number(sale.price || 0);
+                const discount = Math.max(0, Number(sale.discount || 0));
+                const subtotal = qty * unitPrice;
+                const netRevenue = !isNaN(Number(sale.total)) ? Number(sale.total) : Math.max(0, subtotal - discount);
+
+                const avgPurchasePrice = calculateItemProfit(sale.item, qty);
+                const costTotal = avgPurchasePrice * qty;
+                const profit = netRevenue - costTotal;
+                const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-600';
+                const checked = selectedSaleIds.has(sale.id) ? 'checked' : '';
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td class="px-4 py-3 border-b">
+                        <input type="checkbox" ${checked} onchange="toggleSaleSelection('${sale.id}', this.checked)" class="h-4 w-4">
+                    </td>
+                    <td class="px-4 py-3 border-b">${sale.date}</td>
+                    <td class="px-4 py-3 border-b">${sale.item}</td>
+                    <td class="px-4 py-3 border-b">${sale.quantity}</td>
+                    <td class="px-4 py-3 border-b">Rs. ${sale.price.toFixed(2)}</td>
+                    <td class="px-4 py-3 border-b">${sale.customer || ''}</td>
+                    <td class="px-4 py-3 border-b font-semibold">Rs. ${sale.total.toFixed(2)}</td>
+                    <td class="px-4 py-3 border-b font-semibold ${profitColor}">Rs. ${profit.toFixed(2)}</td>
+                    <td class="px-4 py-3 border-b">
+                        <div class="flex flex-wrap gap-1">
+                            <button onclick="editSale('${sale.id}')" class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-sm">Edit</button>
+                            <button onclick="openInvoice('${sale.id}')" class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 text-sm">Invoice</button>
+                            <button onclick="deleteSale('${sale.id}')" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm">Delete</button>
+                        </div>
+                    </td>
+                `;
+            });
+
+            updateSaleSelectionUI();
+        }
+
+        // Edit Sale
+        function editSale(id) {
+            const sale = data.sales.find(s => s.id === id);
+            if (sale) {
+                document.getElementById('saleEditId').value = sale.id;
+                document.getElementById('saleDate').value = sale.date;
+                document.getElementById('saleItem').value = sale.item;
+                document.getElementById('saleQuantity').value = sale.quantity;
+                document.getElementById('salePrice').value = sale.price;
+                document.getElementById('saleDiscount').value = Math.max(0, Number(sale.discount || 0));
+                document.getElementById('saleCustomer').value = sale.customer;
+                document.getElementById('saleTotal').value = sale.total;
+                calculateSaleTotal();
+                document.getElementById('saleCancelBtn').classList.remove('hidden');
+                showTab('sale');
+                window.scrollTo(0, 0);
+            }
+        }
+
+        // Delete Sale
+        function deleteSale(id) {
+            if (confirm('Are you sure you want to delete this sale?')) {
+                data.sales = data.sales.filter(s => s.id !== id);
+                saveData();
+                displaySales();
+            }
+        }
+
+        // Expense Form Submit
+        document.getElementById('expenseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const editId = document.getElementById('expenseEditId').value;
+            const expense = {
+                id: editId || Date.now().toString(),
+                date: document.getElementById('expenseDate').value,
+                category: document.getElementById('expenseCategory').value,
+                description: document.getElementById('expenseDescription').value,
+                amount: parseFloat(document.getElementById('expenseAmount').value)
+            };
+
+            if (editId) {
+                const index = data.expenses.findIndex(e => e.id === editId);
+                data.expenses[index] = expense;
+            } else {
+                data.expenses.push(expense);
+            }
+
+            saveData();
+            displayExpenses();
+            this.reset();
+            setTodayDate();
+            document.getElementById('expenseEditId').value = '';
+            document.getElementById('expenseCancelBtn').classList.add('hidden');
+        });
+
+        // Display Expenses
+        function displayExpenses() {
+            const tbody = document.getElementById('expenseTableBody');
+            tbody.innerHTML = '';
+            
+            data.expenses.forEach(expense => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td class="px-4 py-3 border-b">${expense.date}</td>
+                    <td class="px-4 py-3 border-b">${expense.category}</td>
+                    <td class="px-4 py-3 border-b">${expense.description}</td>
+                    <td class="px-4 py-3 border-b font-semibold">Rs. ${expense.amount.toFixed(2)}</td>
+                    <td class="px-4 py-3 border-b">
+                        <button onclick="editExpense('${expense.id}')" class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-sm mr-1">Edit</button>
+                        <button onclick="deleteExpense('${expense.id}')" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm">Delete</button>
+                    </td>
+                `;
+            });
+        }
+
+        // Edit Expense
+        function editExpense(id) {
+            const expense = data.expenses.find(e => e.id === id);
+            if (expense) {
+                document.getElementById('expenseEditId').value = expense.id;
+                document.getElementById('expenseDate').value = expense.date;
+                document.getElementById('expenseCategory').value = expense.category;
+                document.getElementById('expenseDescription').value = expense.description;
+                document.getElementById('expenseAmount').value = expense.amount;
+                document.getElementById('expenseCancelBtn').classList.remove('hidden');
+                showTab('expense');
+                window.scrollTo(0, 0);
+            }
+        }
+
+        // Delete Expense
+        function deleteExpense(id) {
+            if (confirm('Are you sure you want to delete this expense?')) {
+                data.expenses = data.expenses.filter(e => e.id !== id);
+                saveData();
+                displayExpenses();
+            }
+        }
+
+        // Cancel Edit
+        function cancelEdit(type) {
+            document.getElementById(type + 'Form').reset();
+            document.getElementById(type + 'EditId').value = '';
+            document.getElementById(type + 'CancelBtn').classList.add('hidden');
+            setTodayDate();
+        }
+
+        // Update Dashboard
+        function updateDashboard() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Calculate Today's Sales, Purchase, Expense
+            const todaySales = data.sales.filter(s => s.date === today);
+            const todayPurchases = data.purchases.filter(p => p.date === today);
+            const todayExpenses = data.expenses.filter(e => e.date === today);
+            
+            const todayTotalSales = todaySales.reduce((sum, sale) => sum + sale.total, 0);
+            const todayTotalPurchase = todayPurchases.reduce((sum, purchase) => sum + purchase.total, 0);
+            const todayTotalExpense = todayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+            
+            // Calculate Today's Gross Profit from sold items (based on avg purchase cost)
+            let todayGrossProfit = 0;
+            todaySales.forEach(sale => {
+                const avgPurchasePrice = calculateItemProfit(sale.item, sale.quantity);
+                const itemProfit = (sale.price - avgPurchasePrice) * sale.quantity;
+                todayGrossProfit += itemProfit;
+            });
+
+            // Today's Profit (Net of today's expenses)
+            const todayProfit = todayGrossProfit - todayTotalExpense;
+            
+            // Update Today's Cards
+            document.getElementById('totalSales').textContent = `Rs. ${todayTotalSales.toFixed(2)}`;
+            document.getElementById('totalPurchase').textContent = `Rs. ${todayTotalPurchase.toFixed(2)}`;
+            document.getElementById('totalExpense').textContent = `Rs. ${todayTotalExpense.toFixed(2)}`;
+
+            // Today's Gross Profit
+            document.getElementById('todayGrossProfit').textContent = `Rs. ${todayGrossProfit.toFixed(2)}`;
+            document.getElementById('todayGrossProfit').className = todayGrossProfit >= 0 ? 'text-3xl font-bold text-amber-600' : 'text-3xl font-bold text-red-600';
+
+            // Today's Profit (after today's expenses)
+            document.getElementById('todayProfit').textContent = `Rs. ${todayProfit.toFixed(2)}`;
+            document.getElementById('todayProfit').className = todayProfit >= 0 ? 'text-3xl font-bold text-orange-600' : 'text-3xl font-bold text-red-600';
+
+            // Calculate Overall Net Profit (All-time): Total Sales - Total Purchases - Total Expenses
+            const overallSalesTotal = data.sales.reduce((sum, sale) => sum + sale.total, 0);
+            const overallPurchasesTotal = data.purchases.reduce((sum, purchase) => sum + purchase.total, 0);
+            const overallExpensesTotal = data.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const netProfit = overallSalesTotal - overallPurchasesTotal - overallExpensesTotal;
+            
+            document.getElementById('netProfit').textContent = `Rs. ${netProfit.toFixed(2)}`;
+            document.getElementById('netProfit').className = netProfit >= 0 ? 'text-3xl font-bold text-purple-600' : 'text-3xl font-bold text-red-600';
+
+            displayRecentTransactions();
+        }
+
+        // Display Recent Transactions
+        function displayRecentTransactions() {
+            const sales = [];
+            const purchases = [];
+            const expenses = [];
+            
+            data.sales.forEach(sale => {
+                sales.push({ date: sale.date, description: sale.item, amount: sale.total });
+            });
+            
+            data.purchases.forEach(purchase => {
+                purchases.push({ date: purchase.date, description: purchase.item, amount: purchase.total });
+            });
+            
+            data.expenses.forEach(expense => {
+                expenses.push({ date: expense.date, description: expense.description, amount: expense.amount });
+            });
+
+            // Sort each category by date
+            sales.sort((a, b) => new Date(b.date) - new Date(a.date));
+            purchases.sort((a, b) => new Date(b.date) - new Date(a.date));
+            expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Take recent 5 from each
+            const recentSales = sales.slice(0, 5);
+            const recentPurchases = purchases.slice(0, 5);
+            const recentExpenses = expenses.slice(0, 5);
+
+            const container = document.getElementById('recentTransactions');
+            
+            if (sales.length === 0 && purchases.length === 0 && expenses.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No transactions yet</p>';
+                return;
+            }
+
+            let html = '<div class="grid grid-cols-1 md:grid-cols-3 gap-6">';
+            
+            // Sales Section
+            html += '<div><h3 class="text-lg font-bold text-green-600 mb-3">Recent Sales</h3>';
+            if (recentSales.length > 0) {
+                html += '<table class="w-full"><thead class="bg-green-50"><tr><th class="px-3 py-2 text-left text-xs font-semibold">Date</th><th class="px-3 py-2 text-left text-xs font-semibold">Item</th><th class="px-3 py-2 text-left text-xs font-semibold">Amount</th></tr></thead><tbody>';
+                recentSales.forEach(t => {
+                    html += `<tr><td class="px-3 py-2 border-b text-sm">${t.date}</td><td class="px-3 py-2 border-b text-sm">${t.description}</td><td class="px-3 py-2 border-b font-semibold text-sm">Rs. ${t.amount.toFixed(2)}</td></tr>`;
+                });
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="text-gray-400 text-sm">No sales yet</p>';
+            }
+            html += '</div>';
+
+            // Purchases Section
+            html += '<div><h3 class="text-lg font-bold text-blue-600 mb-3">Recent Purchases</h3>';
+            if (recentPurchases.length > 0) {
+                html += '<table class="w-full"><thead class="bg-blue-50"><tr><th class="px-3 py-2 text-left text-xs font-semibold">Date</th><th class="px-3 py-2 text-left text-xs font-semibold">Item</th><th class="px-3 py-2 text-left text-xs font-semibold">Amount</th></tr></thead><tbody>';
+                recentPurchases.forEach(t => {
+                    html += `<tr><td class="px-3 py-2 border-b text-sm">${t.date}</td><td class="px-3 py-2 border-b text-sm">${t.description}</td><td class="px-3 py-2 border-b font-semibold text-sm">Rs. ${t.amount.toFixed(2)}</td></tr>`;
+                });
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="text-gray-400 text-sm">No purchases yet</p>';
+            }
+            html += '</div>';
+
+            // Expenses Section
+            html += '<div><h3 class="text-lg font-bold text-red-600 mb-3">Recent Expenses</h3>';
+            if (recentExpenses.length > 0) {
+                html += '<table class="w-full"><thead class="bg-red-50"><tr><th class="px-3 py-2 text-left text-xs font-semibold">Date</th><th class="px-3 py-2 text-left text-xs font-semibold">Description</th><th class="px-3 py-2 text-left text-xs font-semibold">Amount</th></tr></thead><tbody>';
+                recentExpenses.forEach(t => {
+                    html += `<tr><td class="px-3 py-2 border-b text-sm">${t.date}</td><td class="px-3 py-2 border-b text-sm">${t.description}</td><td class="px-3 py-2 border-b font-semibold text-sm">Rs. ${t.amount.toFixed(2)}</td></tr>`;
+                });
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="text-gray-400 text-sm">No expenses yet</p>';
+            }
+            html += '</div>';
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Update Inventory
+        function updateInventory() {
+            const inventory = {};
+            
+            data.purchases.forEach(purchase => {
+                if (!inventory[purchase.item]) {
+                    inventory[purchase.item] = { purchased: 0, sold: 0 };
+                }
+                inventory[purchase.item].purchased += purchase.quantity;
+            });
+            
+            data.sales.forEach(sale => {
+                if (!inventory[sale.item]) {
+                    inventory[sale.item] = { purchased: 0, sold: 0 };
+                }
+                inventory[sale.item].sold += sale.quantity;
+            });
+
+            const tbody = document.getElementById('inventoryTableBody');
+            tbody.innerHTML = '';
+
+            Object.keys(inventory).forEach(item => {
+                const stock = inventory[item].purchased - inventory[item].sold;
+                let status = '';
+                let statusClass = '';
+                
+                if (stock >= 3) {
+                    status = 'In Stock';
+                    statusClass = 'bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm';
+                } else if (stock > 0 && stock < 3) {
+                    status = 'Low Stock';
+                    statusClass = 'bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm';
+                } else {
+                    status = 'Out of Stock';
+                    statusClass = 'bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm';
+                }
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td class="px-4 py-3 border-b font-semibold">${item}</td>
+                    <td class="px-4 py-3 border-b">${inventory[item].purchased}</td>
+                    <td class="px-4 py-3 border-b">${inventory[item].sold}</td>
+                    <td class="px-4 py-3 border-b font-bold text-lg">${stock}</td>
+                    <td class="px-4 py-3 border-b"><span class="${statusClass}">${status}</span></td>
+                `;
+            });
+        }
+
+        // Update Inventory Datalist for Sale Form
+        function updateInventoryDatalist() {
+            const datalist = document.getElementById('inventoryItems');
+            datalist.innerHTML = '';
+            
+            const items = [...new Set(data.purchases.map(p => p.item))];
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                datalist.appendChild(option);
+            });
+        }
+
+        // Refresh Inventory
+        function refreshInventory() {
+            updateInventory();
+        }
+
+        // Report Type Change
+        document.getElementById('reportType').addEventListener('change', function() {
+            const type = this.value;
+            const today = new Date();
+            
+            if (type === 'daily') {
+                const todayStr = today.toISOString().split('T')[0];
+                document.getElementById('reportFromDate').value = todayStr;
+                document.getElementById('reportToDate').value = todayStr;
+            } else if (type === 'monthly') {
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+                const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+                document.getElementById('reportFromDate').value = firstDay;
+                document.getElementById('reportToDate').value = lastDay;
+            }
+        });
+
+        // Generate Report
+        function generateReport() {
+            const fromDate = document.getElementById('reportFromDate').value;
+            const toDate = document.getElementById('reportToDate').value;
+
+            const filteredPurchases = data.purchases.filter(p => p.date >= fromDate && p.date <= toDate);
+            const filteredSales = data.sales.filter(s => s.date >= fromDate && s.date <= toDate);
+            const filteredExpenses = data.expenses.filter(e => e.date >= fromDate && e.date <= toDate);
+
+            const totalSales = filteredSales.reduce((sum, sale) => sum + sale.total, 0);
+            const totalPurchase = filteredPurchases.reduce((sum, purchase) => sum + purchase.total, 0);
+            const totalExpense = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const netProfit = totalSales - totalPurchase - totalExpense;
+
+            let html = `
+                <h3 class="text-xl font-bold mb-4">Report: ${fromDate} to ${toDate}</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+                        <h3 class="text-gray-500 text-sm font-semibold">Total Sales</h3>
+                        <p class="text-3xl font-bold text-green-600">Rs. ${totalSales.toFixed(2)}</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+                        <h3 class="text-gray-500 text-sm font-semibold">Total Purchase</h3>
+                        <p class="text-3xl font-bold text-blue-600">Rs. ${totalPurchase.toFixed(2)}</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
+                        <h3 class="text-gray-500 text-sm font-semibold">Total Expense</h3>
+                        <p class="text-3xl font-bold text-red-600">Rs. ${totalExpense.toFixed(2)}</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+                        <h3 class="text-gray-500 text-sm font-semibold">Net Profit</h3>
+                        <p class="text-3xl font-bold ${netProfit >= 0 ? 'text-purple-600' : 'text-red-600'}">Rs. ${netProfit.toFixed(2)}</p>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h4 class="text-lg font-bold mb-3">Sales (${filteredSales.length})</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Date</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Item</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Quantity</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Price</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Cost</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Profit</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            let salesProfitTotal = 0;
+            filteredSales.forEach(sale => {
+                const avgCost = calculateItemProfit(sale.item, sale.quantity);
+                const profit = (sale.price - avgCost) * sale.quantity;
+                salesProfitTotal += profit;
+                const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-600';
+                html += `<tr><td class="px-4 py-2 border-b">${sale.date}</td><td class="px-4 py-2 border-b">${sale.item}</td><td class="px-4 py-2 border-b">${sale.quantity}</td><td class="px-4 py-2 border-b">Rs. ${sale.price.toFixed(2)}</td><td class="px-4 py-2 border-b">Rs. ${avgCost.toFixed(2)}</td><td class="px-4 py-2 border-b font-semibold ${profitColor}">Rs. ${profit.toFixed(2)}</td><td class="px-4 py-2 border-b font-semibold">Rs. ${sale.total.toFixed(2)}</td></tr>`;
+            });
+
+            const salesProfitColor = salesProfitTotal >= 0 ? 'text-green-600' : 'text-red-600';
+            html += `
+                                <tr class="bg-gray-100">
+                                    <td colspan="5" class="px-4 py-3 font-bold text-right">Total:</td>
+                                    <td class="px-4 py-3 font-bold ${salesProfitColor}">Rs. ${salesProfitTotal.toFixed(2)}</td>
+                                    <td class="px-4 py-3 font-bold text-green-600">Rs. ${totalSales.toFixed(2)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h4 class="text-lg font-bold mb-3">Purchases (${filteredPurchases.length})</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Date</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Item</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Quantity</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Price</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            filteredPurchases.forEach(purchase => {
+                html += `<tr><td class="px-4 py-2 border-b">${purchase.date}</td><td class="px-4 py-2 border-b">${purchase.item}</td><td class="px-4 py-2 border-b">${purchase.quantity}</td><td class="px-4 py-2 border-b">Rs. ${purchase.price.toFixed(2)}</td><td class="px-4 py-2 border-b font-semibold">Rs. ${purchase.total.toFixed(2)}</td></tr>`;
+            });
+
+            html += `
+                                <tr class="bg-gray-100">
+                                    <td colspan="4" class="px-4 py-3 font-bold text-right">Total:</td>
+                                    <td class="px-4 py-3 font-bold text-blue-600">Rs. ${totalPurchase.toFixed(2)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-bold mb-3">Expenses (${filteredExpenses.length})</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Date</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Category</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Description</th>
+                                    <th class="px-4 py-2 text-left text-sm font-semibold">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            filteredExpenses.forEach(expense => {
+                html += `<tr><td class="px-4 py-2 border-b">${expense.date}</td><td class="px-4 py-2 border-b">${expense.category}</td><td class="px-4 py-2 border-b">${expense.description}</td><td class="px-4 py-2 border-b font-semibold">Rs. ${expense.amount.toFixed(2)}</td></tr>`;
+            });
+
+            html += `
+                                <tr class="bg-gray-100">
+                                    <td colspan="3" class="px-4 py-3 font-bold text-right">Total:</td>
+                                    <td class="px-4 py-3 font-bold text-red-600">Rs. ${totalExpense.toFixed(2)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('reportContent').innerHTML = html;
+        }
+
+        // Export to Excel
+        function exportToExcel() {
+            const fromDate = document.getElementById('reportFromDate').value;
+            const toDate = document.getElementById('reportToDate').value;
+
+            const filteredPurchases = data.purchases.filter(p => p.date >= fromDate && p.date <= toDate);
+            const filteredSales = data.sales.filter(s => s.date >= fromDate && s.date <= toDate);
+            const filteredExpenses = data.expenses.filter(e => e.date >= fromDate && e.date <= toDate);
+
+            const wb = XLSX.utils.book_new();
+
+            // Sales Sheet
+            const salesData = filteredSales.map(s => ({
+                Date: s.date,
+                Item: s.item,
+                Quantity: s.quantity,
+                'Price/Unit': s.price,
+                Customer: s.customer,
+                Total: s.total
+            }));
+            const wsales = XLSX.utils.json_to_sheet(salesData);
+            XLSX.utils.book_append_sheet(wb, wsales, 'Sales');
+
+            // Purchases Sheet
+            const purchasesData = filteredPurchases.map(p => ({
+                Date: p.date,
+                Item: p.item,
+                Quantity: p.quantity,
+                'Price/Unit': p.price,
+                Supplier: p.supplier,
+                Total: p.total
+            }));
+            const wpurchases = XLSX.utils.json_to_sheet(purchasesData);
+            XLSX.utils.book_append_sheet(wb, wpurchases, 'Purchases');
+
+            // Expenses Sheet
+            const expensesData = filteredExpenses.map(e => ({
+                Date: e.date,
+                Category: e.category,
+                Description: e.description,
+                Amount: e.amount
+            }));
+            const wexpenses = XLSX.utils.json_to_sheet(expensesData);
+            XLSX.utils.book_append_sheet(wb, wexpenses, 'Expenses');
+
+            // Summary Sheet
+            const totalSales = filteredSales.reduce((sum, sale) => sum + sale.total, 0);
+            const totalPurchase = filteredPurchases.reduce((sum, purchase) => sum + purchase.total, 0);
+            const totalExpense = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const netProfit = totalSales - totalPurchase - totalExpense;
+
+            const summaryData = [
+                { Description: 'Total Sales', Amount: totalSales },
+                { Description: 'Total Purchase', Amount: totalPurchase },
+                { Description: 'Total Expense', Amount: totalExpense },
+                { Description: 'Net Profit', Amount: netProfit }
+            ];
+            const wsummary = XLSX.utils.json_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, wsummary, 'Summary');
+
+            XLSX.writeFile(wb, `DAPPER_Gents_Report_${fromDate}_to_${toDate}.xlsx`);
+        }
+
+        // Export to PDF
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const fromDate = document.getElementById('reportFromDate').value;
+            const toDate = document.getElementById('reportToDate').value;
+
+            const filteredPurchases = data.purchases.filter(p => p.date >= fromDate && p.date <= toDate);
+            const filteredSales = data.sales.filter(s => s.date >= fromDate && s.date <= toDate);
+            const filteredExpenses = data.expenses.filter(e => e.date >= fromDate && e.date <= toDate);
+
+            const totalSales = filteredSales.reduce((sum, sale) => sum + sale.total, 0);
+            const totalPurchase = filteredPurchases.reduce((sum, purchase) => sum + purchase.total, 0);
+            const totalExpense = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const netProfit = totalSales - totalPurchase - totalExpense;
+
+            // Header
+            doc.setFontSize(20);
+            doc.text('DAPPER Gents', 105, 15, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text('Business Report', 105, 22, { align: 'center' });
+            doc.setFontSize(10);
+            doc.text(`Period: ${fromDate} to ${toDate}`, 105, 28, { align: 'center' });
+
+            // Summary
+            doc.autoTable({
+                startY: 35,
+                head: [['Description', 'Amount (Rs.)']],
+                body: [
+                    ['Total Sales', totalSales.toFixed(2)],
+                    ['Total Purchase', totalPurchase.toFixed(2)],
+                    ['Total Expense', totalExpense.toFixed(2)],
+                    ['Net Profit', netProfit.toFixed(2)]
+                ],
+                theme: 'grid'
+            });
+
+            // Sales
+            if (filteredSales.length > 0) {
+                doc.autoTable({
+                    startY: doc.lastAutoTable.finalY + 10,
+                    head: [['Date', 'Item', 'Qty', 'Price', 'Customer', 'Total']],
+                    body: filteredSales.map(s => [s.date, s.item, s.quantity, s.price.toFixed(2), s.customer, s.total.toFixed(2)]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [34, 197, 94] }
+                });
+            }
+
+            // Purchases
+            if (filteredPurchases.length > 0) {
+                doc.addPage();
+                doc.setFontSize(14);
+                doc.text('Purchases', 14, 15);
+                doc.autoTable({
+                    startY: 20,
+                    head: [['Date', 'Item', 'Qty', 'Price', 'Supplier', 'Total']],
+                    body: filteredPurchases.map(p => [p.date, p.item, p.quantity, p.price.toFixed(2), p.supplier, p.total.toFixed(2)]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [59, 130, 246] }
+                });
+            }
+
+            // Expenses
+            if (filteredExpenses.length > 0) {
+                doc.addPage();
+                doc.setFontSize(14);
+                doc.text('Expenses', 14, 15);
+                doc.autoTable({
+                    startY: 20,
+                    head: [['Date', 'Category', 'Description', 'Amount']],
+                    body: filteredExpenses.map(e => [e.date, e.category, e.description, e.amount.toFixed(2)]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [239, 68, 68] }
+                });
+            }
+
+            doc.save(`DAPPER_Gents_Report_${fromDate}_to_${toDate}.pdf`);
+        }
+
+        // ---------------------------
+        // Invoice Feature (Single + Multi-item)
+        // ---------------------------
+        let currentInvoiceCtx = null; // { saleIds:[], invoiceNo, dateLabel, customerLabel }
+
+        function formatCurrency(amount) {
+            return `Rs. ${Number(amount || 0).toFixed(2)}`;
+        }
+
+        function generateInvoiceNumberForSale(sale) {
+            const datePart = (sale?.date || new Date().toISOString().split('T')[0]).replaceAll('-', '');
+            const tail = (sale?.id || '').toString().slice(-4).padStart(4, '0');
+            return `INV-${datePart}-${tail}`;
+        }
+
+        function simpleHash(str) {
+            let h = 0;
+            for (let i = 0; i < str.length; i++) {
+                h = (h * 31 + str.charCodeAt(i)) >>> 0;
+            }
+            return h;
+        }
+
+        function generateInvoiceNumberForSales(sales) {
+            if (!Array.isArray(sales) || sales.length === 0) {
+                const datePart = new Date().toISOString().split('T')[0].replaceAll('-', '');
+                return `INV-${datePart}-0000`;
+            }
+            if (sales.length === 1) return generateInvoiceNumberForSale(sales[0]);
+
+            const dates = sales.map(s => s.date).filter(Boolean).sort();
+            const datePart = (dates[0] || new Date().toISOString().split('T')[0]).replaceAll('-', '');
+            const seed = sales.map(s => s.id).join('|');
+            const h = String(simpleHash(seed)).padStart(10, '0').slice(-6);
+            return `INV-${datePart}-M${h}`;
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function getInvoiceDataFromSaleIds(saleIds) {
+            const ids = (saleIds || []).filter(Boolean);
+            const sales = ids
+                .map(id => data.sales.find(s => s.id === id))
+                .filter(Boolean)
+                .slice();
+
+            if (sales.length === 0) return null;
+
+            sales.sort((a, b) => {
+                const da = new Date(a.date);
+                const db = new Date(b.date);
+                const diff = da - db;
+                if (diff !== 0) return diff;
+                return String(a.item || '').localeCompare(String(b.item || ''));
+            });
+
+            const dates = [...new Set(sales.map(s => s.date).filter(Boolean))].sort();
+            const dateLabel = dates.length <= 1 ? (dates[0] || '') : `${dates[0]} to ${dates[dates.length - 1]}`;
+
+            const customers = [...new Set(sales.map(s => (s.customer || '').trim()).filter(Boolean))];
+            const customerLabel = customers.length === 1 ? customers[0] : (customers.length === 0 ? '-' : 'Multiple');
+
+            const invoiceNo = generateInvoiceNumberForSales(sales);
+
+            const rows = sales.map(sale => {
+                const qty = Number(sale.quantity || 0);
+                const unitPrice = Number(sale.price || 0);
+                const subtotal = qty * unitPrice;
+                const discount = Math.max(0, Number(sale.discount || 0));
+                const total = Number(sale.total ?? Math.max(0, subtotal - discount));
+                return {
+                    id: sale.id,
+                    date: sale.date,
+                    item: sale.item,
+                    qty,
+                    unitPrice,
+                    subtotal,
+                    discount,
+                    total
+                };
+            });
+
+            const subtotalTotal = rows.reduce((sum, r) => sum + r.subtotal, 0);
+            const discountTotal = rows.reduce((sum, r) => sum + r.discount, 0);
+            const total = rows.reduce((sum, r) => sum + r.total, 0);
+
+            return {
+                saleIds: sales.map(s => s.id),
+                invoiceNo,
+                dateLabel,
+                customerLabel,
+                rows,
+                subtotalTotal,
+                discountTotal,
+                total
+            };
+        }
+
+        function renderInvoicePreview(inv) {
+            const discountLine = inv.discountTotal > 0
+                ? `<div class="mt-1 text-sm flex items-center justify-between"><span>Discount</span><span class="font-semibold text-red-600">- ${formatCurrency(inv.discountTotal)}</span></div>`
+                : '';
+
+            const rowsHtml = inv.rows.map(r => {
+                const d = r.discount > 0 ? `- ${formatCurrency(r.discount)}` : '-';
+                return `
+                    <tr>
+                        <td class="px-4 py-3 border-b text-sm">${escapeHtml(r.item)}</td>
+                        <td class="px-4 py-3 border-b text-sm text-right">${r.qty}</td>
+                        <td class="px-4 py-3 border-b text-sm text-right">${formatCurrency(r.unitPrice)}</td>
+                        <td class="px-4 py-3 border-b text-sm text-right">${formatCurrency(r.subtotal)}</td>
+                        <td class="px-4 py-3 border-b text-sm text-right">${d}</td>
+                        <td class="px-4 py-3 border-b text-sm text-right font-semibold">${formatCurrency(r.total)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const preview = document.getElementById('invoicePreview');
+            preview.innerHTML = `
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <div class="text-2xl font-extrabold">DAPPER Gents</div>
+                        <div class="text-sm text-gray-600">Invoice</div>
+                        <div class="text-xs text-gray-500 mt-1">Logo: (blank)</div>
+                        <div class="text-xs text-gray-500">Address/Phone: (add later)</div>
+                        <div class="text-xs text-gray-500 mt-1">Items: ${inv.rows.length}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-gray-600">Invoice No</div>
+                        <div class="text-lg font-bold">${inv.invoiceNo}</div>
+                        <div class="text-sm text-gray-600 mt-2">Date</div>
+                        <div class="text-sm font-semibold">${escapeHtml(inv.dateLabel || '-')}</div>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="border rounded-lg p-4">
+                        <div class="text-xs uppercase tracking-wider text-gray-500 font-semibold">Bill To</div>
+                        <div class="mt-1 text-sm"><span class="font-semibold">Customer:</span> ${escapeHtml(inv.customerLabel || '-')}</div>
+                    </div>
+                    <div class="border rounded-lg p-4">
+                        <div class="text-xs uppercase tracking-wider text-gray-500 font-semibold">Summary</div>
+                        <div class="mt-1 text-sm flex items-center justify-between"><span>Subtotal</span><span class="font-semibold">${formatCurrency(inv.subtotalTotal)}</span></div>
+                        ${discountLine}
+                        <div class="mt-2 border-t pt-2 text-sm flex items-center justify-between"><span class="font-semibold">Total</span><span class="font-bold">${formatCurrency(inv.total)}</span></div>
+                    </div>
+                </div>
+
+                <div class="mt-6 overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-semibold">Item</th>
+                                <th class="px-4 py-2 text-right text-xs font-semibold">Qty</th>
+                                <th class="px-4 py-2 text-right text-xs font-semibold">Unit Price</th>
+                                <th class="px-4 py-2 text-right text-xs font-semibold">Subtotal</th>
+                                <th class="px-4 py-2 text-right text-xs font-semibold">Discount</th>
+                                <th class="px-4 py-2 text-right text-xs font-semibold">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                            <tr class="bg-gray-100">
+                                <td class="px-4 py-3 font-bold text-right" colspan="3">Total:</td>
+                                <td class="px-4 py-3 font-bold text-right">${formatCurrency(inv.subtotalTotal)}</td>
+                                <td class="px-4 py-3 font-bold text-right">${inv.discountTotal > 0 ? ('- ' + formatCurrency(inv.discountTotal)) : '-'}</td>
+                                <td class="px-4 py-3 font-bold text-right">${formatCurrency(inv.total)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-6 text-sm text-gray-600">
+                    <div class="font-semibold text-gray-800">Notes</div>
+                    <div>Thank you for your business.</div>
+                </div>
+            `;
+        }
+
+        // Backward compatible (single-sale invoice)
+        function openInvoice(saleId) {
+            openInvoiceForSales([saleId]);
+        }
+
+        // New: multi-item invoice from selected sales
+        function openInvoiceForSales(saleIds) {
+            const inv = getInvoiceDataFromSaleIds(saleIds);
+            if (!inv) {
+                alert('No valid sales found for invoice.');
+                return;
+            }
+
+            currentInvoiceCtx = { saleIds: inv.saleIds, invoiceNo: inv.invoiceNo, dateLabel: inv.dateLabel, customerLabel: inv.customerLabel };
+            renderInvoicePreview(inv);
+
+            const modal = document.getElementById('invoiceModal');
+            modal.classList.remove('hidden');
+        }
+
+        function closeInvoiceModal() {
+            currentInvoiceCtx = null;
+            const modal = document.getElementById('invoiceModal');
+            modal.classList.add('hidden');
+        }
+
+        function printInvoice() {
+            if (!currentInvoiceCtx) return;
+            window.print();
+        }
+
+        function downloadInvoicePDF() {
+            if (!currentInvoiceCtx || !Array.isArray(currentInvoiceCtx.saleIds) || currentInvoiceCtx.saleIds.length === 0) {
+                alert('No invoice selected.');
+                return;
+            }
+
+            const inv = getInvoiceDataFromSaleIds(currentInvoiceCtx.saleIds);
+            if (!inv) {
+                alert('Sales not found for invoice.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Header
+            doc.setFontSize(18);
+            doc.text('DAPPER Gents', 14, 15);
+            doc.setFontSize(11);
+            doc.text('Invoice', 14, 22);
+
+            doc.setFontSize(10);
+            doc.text(`Invoice No: ${inv.invoiceNo}`, 14, 30);
+            doc.text(`Date: ${inv.dateLabel || '-'}`, 14, 36);
+            doc.text(`Customer: ${inv.customerLabel || '-'}`, 14, 42);
+
+            const bodyRows = inv.rows.map(r => [
+                String(r.item || ''),
+                String(r.qty),
+                r.unitPrice.toFixed(2),
+                r.subtotal.toFixed(2),
+                r.discount > 0 ? ('-' + r.discount.toFixed(2)) : '0.00',
+                r.total.toFixed(2)
+            ]);
+
+            doc.autoTable({
+                startY: 50,
+                head: [['Item', 'Qty', 'Unit Price (Rs.)', 'Subtotal (Rs.)', 'Discount (Rs.)', 'Total (Rs.)']],
+                body: bodyRows,
+                theme: 'grid',
+                headStyles: { fillColor: [79, 70, 229] }
+            });
+
+            const summaryBody = [
+                ['Subtotal', inv.subtotalTotal.toFixed(2)]
+            ];
+            if (inv.discountTotal > 0) summaryBody.push(['Discount', '-' + inv.discountTotal.toFixed(2)]);
+            summaryBody.push(['Total', inv.total.toFixed(2)]);
+
+            const y = doc.lastAutoTable.finalY + 10;
+            doc.autoTable({
+                startY: y,
+                head: [['Summary', 'Amount (Rs.)']],
+                body: summaryBody,
+                theme: 'grid'
+            });
+
+            doc.save(`Invoice_${inv.invoiceNo}.pdf`);
+        }
+
+        // ---------------------------
+        // PWA install + Service Worker
+        // ---------------------------
+        let deferredInstallPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            deferredInstallPrompt = e;
+
+            const btn = document.getElementById('installBtn');
+            if (btn) btn.classList.remove('hidden');
+        });
+
+        async function triggerInstall() {
+            if (!deferredInstallPrompt) {
+                alert('Install prompt is not available yet. On Android, use Chrome menu → “Install app”.');
+                return;
+            }
+            deferredInstallPrompt.prompt();
+            const choice = await deferredInstallPrompt.userChoice;
+            deferredInstallPrompt = null;
+
+            const btn = document.getElementById('installBtn');
+            if (btn) btn.classList.add('hidden');
+
+            console.log('PWA install choice:', choice.outcome);
+        }
+
+        function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) return;
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(() => console.log('Service worker registered'))
+                .catch((err) => console.warn('Service worker registration failed', err));
+        }
+
+        // Initialize App
+        window.onload = function() {
+            const installBtn = document.getElementById('installBtn');
+            if (installBtn) installBtn.addEventListener('click', triggerInstall);
+
+            registerServiceWorker();
+
+            loadData();
+            displayPurchases();
+            displaySales();
+            displayExpenses();
+            updateDashboard();
+            updateInventory();
+            updateInventoryDatalist();
+            updateCartUI();
+        };
+    </script>
+</body>
+</html>
